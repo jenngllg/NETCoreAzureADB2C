@@ -33,6 +33,7 @@ namespace TodoListClient.Services
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly HttpClient _httpClient;
         private readonly string _TodoListScope = string.Empty;
+        private readonly string _TodoListScopeRead = string.Empty;
         private readonly string _TodoListBaseAddress = string.Empty;
         private readonly ITokenAcquisition _tokenAcquisition;
 
@@ -42,6 +43,7 @@ namespace TodoListClient.Services
             _tokenAcquisition = tokenAcquisition;
             _contextAccessor = contextAccessor;
             _TodoListScope = configuration["TodoList:TodoListScope"];
+            _TodoListScopeRead = configuration["TodoList:TodoListScopeRead"];
             _TodoListBaseAddress = configuration["TodoList:TodoListBaseAddress"];
         }
 
@@ -117,7 +119,7 @@ namespace TodoListClient.Services
 
         private async Task PrepareAuthenticatedClient()
         {
-            var accessToken = await _tokenAcquisition.GetAccessTokenForUserAsync(new[] { _TodoListScope });
+            var accessToken = await _tokenAcquisition.GetAccessTokenForUserAsync(new[] { _TodoListScope, _TodoListScopeRead });
             Debug.WriteLine($"access token-{accessToken}");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

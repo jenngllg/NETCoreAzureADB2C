@@ -10,4 +10,6 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="1.8.0" />
   </ItemGroup>
 
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
+
 </Project>
