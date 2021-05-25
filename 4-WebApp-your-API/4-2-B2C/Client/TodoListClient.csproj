@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" Version="5.0.4" />
+    <PackageReference Include="Microsoft.Graph" Version="3.29.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="1.8.0" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.8.0" />
   </ItemGroup>
