@@ -43,7 +43,7 @@ namespace WebApp_OpenIDConnect_DotNet
 
             services.AddMicrosoftIdentityWebAppAuthentication(Configuration, "AzureAdB2C")
                     .EnableTokenAcquisitionToCallDownstreamApi(new string[] { Configuration["TodoList:TodoListScope"], Configuration["TodoList:ReadScope"] })
-                    .AddInMemoryTokenCaches();
+                    .AddSessionTokenCaches();
 
             // Add APIs
             services.AddTodoListService(Configuration);
@@ -57,6 +57,16 @@ namespace WebApp_OpenIDConnect_DotNet
             }).AddMicrosoftIdentityUI();
 
             services.AddRazorPages();
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("Admin", policy =>
+                                  policy.RequireClaim("extension_Role", "Admin"));
+                options.AddPolicy("Mission", policy =>
+                                  policy.RequireClaim("extension_Role", "Mission"));
+                options.AddPolicy("Stakeholder", policy =>
+                                  policy.RequireClaim("extension_Role", "Stakeholder"));
+            });
 
             //Configuring appsettings section AzureAdB2C, into IOptions
             services.AddOptions();
@@ -80,6 +90,8 @@ namespace WebApp_OpenIDConnect_DotNet
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
+
+            app.UseSession();
 
             app.UseRouting();
             app.UseAuthentication();

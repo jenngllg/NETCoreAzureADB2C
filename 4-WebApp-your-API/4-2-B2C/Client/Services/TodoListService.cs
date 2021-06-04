@@ -127,66 +127,18 @@ namespace TodoListClient.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            #region USER
+            IConfidentialClientApplication confidentialClientApplication = BuildConfidentialClientApplication();
+            GraphServiceClient graphServiceClient = BuildGraphClient(confidentialClientApplication);
 
-            ////sign up
-
-            // The app registration should be configured to require access to permissions
-            // sufficient for the Microsoft Graph API calls the app will be making, and
-            // those permissions should be granted by a tenant administrator.
-            var scopes = new string[] { "https://graph.microsoft.com/.default" };
-
-            IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
-            .Create("04e43293-05fc-493c-9fd9-20d221dc4b9d") //client id
-            .WithTenantId("ioaseapp.onmicrosoft.com") //tenant id or domain name
-            .WithClientSecret(".BRoKtVroXwoi6kLR0DP8VNw4I1Q_-_oSk") //client secret
-            .Build();
-
-            // Build the Microsoft Graph client. As the authentication provider, set an async lambda
-            // which uses the MSAL client to obtain an app-only access token to Microsoft Graph,
-            // and inserts this access token in the Authorization header of each API request. 
-            GraphServiceClient graphServiceClient =
-                new GraphServiceClient(new DelegateAuthenticationProvider(async (requestMessage) =>
-                {
-
-                    // Retrieve an access token for Microsoft Graph (gets a fresh token if needed).
-                    var authResult = await confidentialClientApplication
-                        .AcquireTokenForClient(scopes)
-                        .ExecuteAsync();
-
-                    // Add the access token in the Authorization header of the API request.
-                    requestMessage.Headers.Authorization =
-                        new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-                })
-                );
-
-            string userId = "389cf75d-36cf-4b39-95b3-0a3a8dcc5265";
-            User user = await graphServiceClient.Users[userId]
-                .Request()
-                .GetAsync();
+            string userId = "565376f0-f699-4451-aa3f-b1c7758d738c";
+            User user = await GetClient(graphServiceClient, userId);
 
             if (user != null)
             {
-                string userPrincipalName = "essai@test.com";
-                MailAddress address = new MailAddress(userPrincipalName);
-                string company = address.Host;
+                AddToUserClaims(user);
 
-                IDictionary<string, object> extensionInstance = new Dictionary<string, object>
-                {
-                    { "extension_dd6b4637bd7f4c69a69832b42fb7200e_Role", "Admin" },
-                    { "extension_dd6b4637bd7f4c69a69832b42fb7200e_Organization", company }
-                };
-
-                user.AdditionalData = extensionInstance;
-                //user.AccountEnabled = false;
-
-                var updatedresult = await graphServiceClient.Users[userId]
-                            .Request()
-                            .UpdateAsync(user);
+                await UpdateClient(graphServiceClient, user, userId);
             }
-
-            #endregion
-
         }
 
         public async Task<Todo> GetAsync(int id)
@@ -204,5 +156,80 @@ namespace TodoListClient.Services
 
             throw new HttpRequestException($"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
         }
+
+        #region Private methods
+
+        /// <summary>
+        /// Instantiate a confidential client application with configuration options
+        /// </summary>
+        private IConfidentialClientApplication BuildConfidentialClientApplication()
+        {
+            return ConfidentialClientApplicationBuilder
+                   .Create("04e43293-05fc-493c-9fd9-20d221dc4b9d") //client id
+                   .WithTenantId("ioaseapp.onmicrosoft.com") //tenant id or domain name
+                   .WithClientSecret(".BRoKtVroXwoi6kLR0DP8VNw4I1Q_-_oSk") //client secret
+                   .Build();
+        }
+
+        /// <summary>
+        /// Build the Microsoft Graph client. As the authentication provider, 
+        /// set an async lambda which uses the MSAL client to obtain an app-only access token to Microsoft Graph, 
+        /// and inserts this access token in the Authorization header of each API request. 
+        /// </summary>
+        private GraphServiceClient BuildGraphClient(IConfidentialClientApplication confidentialClientApplication)
+        {
+            var scopes = new string[] { "https://graph.microsoft.com/.default" };
+
+            return new GraphServiceClient(new DelegateAuthenticationProvider(async (requestMessage) =>
+                {
+                    // Retrieve an access token for Microsoft Graph (gets a fresh token if needed).
+                    var authResult = await confidentialClientApplication
+                        .AcquireTokenForClient(scopes)
+                        .ExecuteAsync();
+
+                    // Add the access token in the Authorization header of the API request.
+                    requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
+                })
+            );
+        }
+
+        private async Task<User> GetClient(GraphServiceClient graphServiceClient, string userId)
+        {
+            return await graphServiceClient.Users[userId]
+                .Request()
+                .GetAsync();
+        }
+
+        private async Task<User> UpdateClient(GraphServiceClient graphServiceClient, User user, string userId)
+        {
+            return await graphServiceClient.Users[userId]
+                            .Request()
+                            .UpdateAsync(user);
+        }
+
+        private void AddRoleToClaims(IDictionary<string, object> extensionInstance, string role)
+        {
+            extensionInstance.Add("extension_dd6b4637bd7f4c69a69832b42fb7200e_Role", role);
+        }
+
+        private void AddOrganizationToClaims(IDictionary<string, object> extensionInstance, string userPrincipalName)
+        {
+            MailAddress address = new MailAddress(userPrincipalName);
+            string company = address.Host;
+
+            extensionInstance.Add("extension_dd6b4637bd7f4c69a69832b42fb7200e_Organization", company);
+        }
+
+        private void AddToUserClaims(User user)
+        {
+            IDictionary<string, object> extensionInstance = new Dictionary<string, object>();
+
+            AddRoleToClaims(extensionInstance, "Mission");
+            AddOrganizationToClaims(extensionInstance, "essai@test.com");
+
+            user.AdditionalData = extensionInstance;
+        }
+
+        #endregion
     }
 }

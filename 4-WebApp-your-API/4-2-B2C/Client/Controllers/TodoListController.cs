@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web;
 using System.Threading.Tasks;
@@ -46,6 +47,7 @@ namespace TodoListClient.Controllers
         }
 
         // GET: TodoList/Edit/5
+        [Authorize(Policy = "Mission")]
         public async Task<ActionResult> Edit(int id)
         {
             Todo todo = await this._todoListService.GetAsync(id);
